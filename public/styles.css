@@ -1,0 +1,117 @@
+/* Page layout */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Chat title */
+h1 {
+    margin-bottom: 10px;
+}
+
+/* Chat box */
+#chatbox {
+    width: 400px;
+    height: 500px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+    padding: 12px;
+    background-color: #ffffff;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Base message style */
+.message {
+    max-width: 80%;
+    padding: 12px;
+    margin: 6px 0;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: normal; /* FIX spacing issue */
+}
+
+/* User message bubble */
+.user {
+    align-self: flex-end;
+    background-color: #007bff;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+/* Bot message bubble (product card style) */
+.bot {
+    align-self: flex-start;
+    background-color: #f0f0f0;
+    color: #000;
+    border-bottom-left-radius: 4px;
+}
+
+/* Product info block */
+.bot .product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ID + Name in one line */
+.bot .product-title {
+    font-weight: bold;
+    font-size: 15px;
+}
+
+/* Price highlight */
+.bot .product-price {
+    color: #28a745;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+/* Product image styling */
+.product-image {
+    width: 180px;
+    height: auto;
+    margin: 12px auto 0 auto;
+    display: block;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Input field */
+input {
+    width: 400px;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #007bff;
+}
+
+/* Send button */
+button {
+    width: 400px;
+    padding: 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: none;
+    background-color: #28a745;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #218838;
+}

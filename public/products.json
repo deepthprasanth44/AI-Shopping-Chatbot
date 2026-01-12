@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "name": "Backpack",
+    "price": 2500,
+    "description": "Durable backpack suitable for college students, office use, and short travel. Includes multiple compartments and padded straps.",
+    "stock": 10
+  },
+  {
+    "id": 2,
+    "name": "Water Bottle",
+    "price": 800,
+    "description": "Insulated stainless steel water bottle that keeps beverages cold for up to 24 hours or hot for 12 hours.",
+    "stock": 20
+  },
+  {
+    "id": 3,
+    "name": "Notebook",
+    "price": 300,
+    "description": "A5 size notebook with high-quality pages, ideal for daily notes, sketches, and journaling.",
+    "stock": 30
+  },
+  {
+    "id": 4,
+    "name": "Laptop Sleeve",
+    "price": 1500,
+    "description": "Protective laptop sleeve with soft padding, suitable for laptops up to 15 inches.",
+    "stock": 15
+  },
+  {
+    "id": 5,
+    "name": "Headphones",
+    "price": 3500,
+    "description": "Wireless over-ear headphones with active noise cancellation and long battery life.",
+    "stock": 5
+  }
+]
