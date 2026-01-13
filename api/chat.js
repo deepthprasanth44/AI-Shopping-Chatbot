@@ -42,26 +42,23 @@ Try typing:
     }
 
     /* ================= SHOW ALL PRODUCTS ================= */
-    if (
-      userMessage === "products" ||
-      userMessage === "show products"
-    ) {
+    if (userMessage === "products" || userMessage === "show products") {
       let reply = "🛍️ Available Products:\n\n";
 
       products.forEach(p => {
         const imageName = p.name.toLowerCase().replace(/\s+/g, "-");
 
-        reply += `
-${p.name}
-💰 Price: ₹${p.price}
+        reply +=
+`Name: ${p.name}
+Price: ₹${p.price}
 Image: images/${imageName}.jpg
-
+---
 `;
       });
 
-      reply += "💡 To know more about a product, type the product name";
+      reply += `👉 To know more about a product, type the product name`;
 
-      return res.json({ reply: reply.trim() });
+      return res.json({ reply });
     }
 
     /* ================= PRICE LIST ================= */
@@ -84,18 +81,20 @@ Image: images/${imageName}.jpg
       }
 
       let reply = `🛍️ Products under ₹${budget}:\n\n`;
+
       filtered.forEach(p => {
         const imageName = p.name.toLowerCase().replace(/\s+/g, "-");
-        reply += `
-${p.name}
+
+        reply +=
+`Name: ${p.name}
 Price: ₹${p.price}
 Image: images/${imageName}.jpg
-
+---
 `;
       });
 
-      reply += "💡 Type the product name to see full details";
-      return res.json({ reply: reply.trim() });
+      reply += `👉 Type product name to see full details`;
+      return res.json({ reply });
     }
 
     /* ================= ADD TO CART (STEP 1) ================= */
@@ -139,7 +138,6 @@ Image: images/${imageName}.jpg
       });
 
       reply += `\nTotal: ₹${total}\n\n👉 Type 'checkout' to place order`;
-
       return res.json({ reply });
     }
 
