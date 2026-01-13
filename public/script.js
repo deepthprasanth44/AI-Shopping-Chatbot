@@ -41,17 +41,17 @@ function addChatMessage(message, sender) {
     /* ================= PRODUCT LIST ================= */
     if (typeof message === "string" && message.startsWith("🛍️")) {
 
-        const blocks = message.split("\n\n").filter(b => b.includes("Price"));
+        // Regex to capture each product block
+        const productRegex =
+            /([A-Za-z ].+)\n.*Price:\s*₹\d+[\s\S]*?Image:\s*(.*)/g;
 
         let html = `<b>🛍️ Available Products</b><br><br>`;
+        let match;
 
-        blocks.forEach(block => {
-            const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
-
-            const name = lines[0]; // first line = product name
-            const price = lines.find(l => l.includes("Price")) || "";
-            const imageLine = lines.find(l => l.startsWith("Image:"));
-            const image = imageLine ? imageLine.replace("Image:", "").trim() : "";
+        while ((match = productRegex.exec(message)) !== null) {
+            const name = match[1].trim();
+            const priceLine = match[0].match(/Price:\s*₹\d+/)?.[0] || "";
+            const image = match[2].trim();
 
             html += `
               <div style="
@@ -70,11 +70,11 @@ function addChatMessage(message, sender) {
                      onerror="this.style.display='none'">
                 <div>
                   <b>${name}</b><br>
-                  <span>${price}</span>
+                  <span>${priceLine}</span>
                 </div>
               </div>
             `;
-        });
+        }
 
         html += `<br>👉 <i>To know more about a product, type the product name</i>`;
         messageDiv.innerHTML = html;
