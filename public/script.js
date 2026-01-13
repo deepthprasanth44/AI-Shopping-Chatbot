@@ -12,7 +12,7 @@ async function sendMessage() {
     inputElement.value = "";
 
     try {
-        // ✅ IMPORTANT: Vercel serverless endpoint
+        // Vercel serverless API
         const response = await fetch("/api/chat", {
             method: "POST",
             headers: {
@@ -41,7 +41,7 @@ async function sendMessage() {
 }
 
 // ================================
-// Render chat message (text + image)
+// Render chat message (TEXT + IMAGE)
 // ================================
 function addChatMessage(message, sender) {
     const chatbox = document.getElementById("chatbox");
@@ -49,21 +49,23 @@ function addChatMessage(message, sender) {
 
     messageDiv.classList.add("message", sender);
 
+    // Handle messages that contain ONE image
     if (typeof message === "string" && message.includes("Image:")) {
         const parts = message.split("Image:");
-        const textPart = parts[0].replace(/\n/g, "<br>");
+        const textPart = parts[0].trim().replace(/\n/g, "<br>");
         const imagePath = parts[1].trim();
 
         messageDiv.innerHTML = `
-            ${textPart}<br>
+            <div class="text-part">${textPart}</div>
             <img 
                 src="${imagePath}" 
-                class="product-image" 
+                class="product-image"
                 alt="Product Image"
                 onerror="this.style.display='none'"
             >
         `;
     } else {
+        // Normal text message
         messageDiv.innerHTML = String(message).replace(/\n/g, "<br>");
     }
 
