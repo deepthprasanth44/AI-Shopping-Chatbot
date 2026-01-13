@@ -3,10 +3,10 @@ import fs from "fs";
 import path from "path";
 
 /**
- * Simple in-memory cart (per deployment)
- * For demo / academic projects – OK
+ * Simple in-memory cart (demo purpose)
  */
 let cart = [];
+let awaitingProductForCart = false;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -15,14 +15,13 @@ export default async function handler(req, res) {
 
   try {
     const { message } = req.body;
-
     if (!message || typeof message !== "string") {
       return res.status(400).json({ reply: "Message missing" });
     }
 
     const userMessage = message.toLowerCase().trim();
 
-    // Load products.json (Vercel safe)
+    // Load products
     const productsPath = path.join(process.cwd(), "public", "products.json");
     const products = JSON.parse(fs.readFileSync(productsPath, "utf-8"));
 
@@ -31,11 +30,12 @@ export default async function handler(req, res) {
       return res.json({
         reply:
 `Hello 👋  
-You can try:  
+I can help you shop 😊  
+
+Try typing:
 • products  
 • prices  
 • products under 3000  
-• add to cart <product name>  
 • cart  
 • checkout`
       });
@@ -44,8 +44,7 @@ You can try:
     /* ================= SHOW ALL PRODUCTS ================= */
     if (
       userMessage === "products" ||
-      userMessage === "show products" ||
-      userMessage.includes("list products")
+      userMessage === "show products"
     ) {
       let reply = "🛍️ Available Products:\n\n";
 
@@ -54,31 +53,28 @@ You can try:
 
         reply += `
 ${p.name}
-Price: ₹${p.price}
-Description: ${p.description}
+💰 Price: ₹${p.price}
 Image: images/${imageName}.jpg
 
 `;
       });
 
-      reply += "👉 To add an item: add to cart <product name>";
+      reply += "💡 To know more about a product, type the product name";
 
       return res.json({ reply: reply.trim() });
     }
 
     /* ================= PRICE LIST ================= */
-    if (userMessage === "prices" || userMessage === "price list") {
+    if (userMessage === "prices") {
       let reply = "💰 Product Prices:\n\n";
-
       products.forEach(p => {
         reply += `${p.name} – ₹${p.price}\n`;
       });
-
       return res.json({ reply: reply.trim() });
     }
 
     /* ================= BUDGET QUERY ================= */
-    const budgetMatch = userMessage.match(/(under|below)\s*₹?\s*(\d+)/);
+    const budgetMatch = userMessage.match(/(under|below)\s*(\d+)/);
     if (budgetMatch) {
       const budget = parseInt(budgetMatch[2], 10);
       const filtered = products.filter(p => p.price <= budget);
@@ -87,8 +83,7 @@ Image: images/${imageName}.jpg
         return res.json({ reply: `No products under ₹${budget}.` });
       }
 
-      let reply = `Products under ₹${budget}:\n\n`;
-
+      let reply = `🛍️ Products under ₹${budget}:\n\n`;
       filtered.forEach(p => {
         const imageName = p.name.toLowerCase().replace(/\s+/g, "-");
         reply += `
@@ -99,30 +94,38 @@ Image: images/${imageName}.jpg
 `;
       });
 
+      reply += "💡 Type the product name to see full details";
       return res.json({ reply: reply.trim() });
     }
 
-    /* ================= ADD TO CART ================= */
-    if (userMessage.startsWith("add to cart")) {
-      const productName = userMessage.replace("add to cart", "").trim();
+    /* ================= ADD TO CART (STEP 1) ================= */
+    if (userMessage === "add to cart") {
+      awaitingProductForCart = true;
+      return res.json({
+        reply: "❓ Which product do you want to add? Type the product name."
+      });
+    }
 
+    /* ================= ADD TO CART (STEP 2) ================= */
+    if (awaitingProductForCart) {
       const product = products.find(p =>
-        productName.includes(p.name.toLowerCase())
+        userMessage.includes(p.name.toLowerCase())
       );
 
       if (!product) {
-        return res.json({ reply: "❌ Product not found." });
+        return res.json({ reply: "❌ Product not found. Try again." });
       }
 
       cart.push(product);
+      awaitingProductForCart = false;
 
       return res.json({
-        reply: `✅ ${product.name} added to cart.`
+        reply: `✅ ${product.name} added to cart.\n\nType 'cart' to view cart or 'checkout' to order.`
       });
     }
 
     /* ================= VIEW CART ================= */
-    if (userMessage === "cart" || userMessage === "view cart") {
+    if (userMessage === "cart") {
       if (!cart.length) {
         return res.json({ reply: "🛒 Your cart is empty." });
       }
@@ -135,7 +138,7 @@ Image: images/${imageName}.jpg
         total += p.price;
       });
 
-      reply += `\nTotal: ₹${total}\n\nType 'checkout' to place order`;
+      reply += `\nTotal: ₹${total}\n\n👉 Type 'checkout' to place order`;
 
       return res.json({ reply });
     }
@@ -147,7 +150,7 @@ Image: images/${imageName}.jpg
       }
 
       let total = 0;
-      let reply = "✅ Order Confirmed!\n\nItems:\n";
+      let reply = "✅ Order Summary:\n\n";
 
       cart.forEach(p => {
         reply += `• ${p.name} – ₹${p.price}\n`;
@@ -156,12 +159,11 @@ Image: images/${imageName}.jpg
 
       reply += `\nTotal Paid: ₹${total}\n\n🎉 Thank you for shopping!`;
 
-      cart = []; // clear cart
-
+      cart = [];
       return res.json({ reply });
     }
 
-    /* ================= PRODUCT NAME DIRECT ================= */
+    /* ================= PRODUCT DETAILS ================= */
     const product = products.find(p =>
       userMessage.includes(p.name.toLowerCase())
     );
@@ -170,12 +172,15 @@ Image: images/${imageName}.jpg
       const imageName = product.name.toLowerCase().replace(/\s+/g, "-");
 
       return res.json({
-        reply: `
-${product.name}
-Price: ₹${product.price}
-Description: ${product.description}
+        reply:
+`${product.name}
+🆔 ID: ${product.id}
+💰 Price: ₹${product.price}
+📝 ${product.description}
+
 Image: images/${imageName}.jpg
-        `.trim()
+
+🛒 To order, type: add to cart`
       });
     }
 
@@ -192,7 +197,6 @@ Image: images/${imageName}.jpg
     );
 
     const data = await response.json();
-
     const aiReply =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Sorry, I couldn't understand that.";
