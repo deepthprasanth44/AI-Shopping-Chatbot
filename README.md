@@ -2,20 +2,21 @@ AI Shopping Chatbot
 
 
 Overview
-AI Shopping Chatbot is a web-based application that allows users to interact with a virtual shopping assistant. Users can browse available products, ask questions about prices and product details, filter products based on budget, add items to a cart, and complete a checkout process through a conversational interface.The chatbot uses rule-based logic for core shopping actions and integrates the Gemini API for intelligent conversational fallback responses.
+AI Shopping Chatbot is a web-based application that allows users to interact with a virtual shopping assistant through a conversational interface.Users can browse products, check prices, filter items by budget, view detailed product information, add items to a cart, and complete checkout.The chatbot uses rule-based logic for core shopping operations and integrates the Gemini API as a conversational fallback for unmatched queries.
 
-Live Demo 
-Application (Vercel):
+Live Demo
+Vercel Deployment:
 https://ai-shopping-chatbot-shr4.vercel.app
 
 Features
 Display available products from a JSON data source
-Answer price-related and budget-based queries (e.g., “under ₹3000”)
-Show detailed product information with images
-Add products to cart via chat commands
-Checkout with order summary and total price
-Conversational fallback using Gemini API
-Deployed using Vercel serverless functions
+Show product name, price, and image in a list format
+View detailed product information (ID, description, price, image)
+Budget-based filtering (e.g., products under ₹3000)
+Add products to cart using chat commands
+View cart and complete checkout with order summary
+Conversational fallback responses using Gemini API
+Deployed using Vercel Serverless Functions
 
 Tech Stack
 Frontend: HTML, CSS, JavaScript
@@ -46,21 +47,22 @@ Open public/index.html in your browser.
 Example Chat Flow
 
 User: hi
-Bot: greeting message
+Bot: Greeting message with usage instructions
 
-User: show products
-Bot: lists available products
+User: products
+Bot: Lists available products with price
 
-User: price of backpack
-Bot: shows price details
+User: backpack
+Bot: Shows detailed product information with image
 
 User: add to cart
-Bot: asks for product name
+Bot: Asks for product name
 
 User: checkout
-Bot: displays order summary and confirms order
+Bot: Displays order summary and confirms purchase
 
 Notes
 Core shopping logic (product listing, cart handling, checkout) is implemented manually for reliability.
 Gemini API is used only for conversational fallback when predefined logic does not match user input.
 The backend is implemented as a Vercel serverless API (/api/chat) for production deployment.
+
