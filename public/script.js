@@ -41,17 +41,17 @@ function addChatMessage(message, sender) {
     /* ================= PRODUCT LIST ================= */
     if (typeof message === "string" && message.startsWith("🛍️")) {
 
-        // Split safely using Image:
-        const parts = message.split("Image:").slice(1);
+        const blocks = message.split("\n\n").filter(b => b.includes("Price"));
 
         let html = `<b>🛍️ Available Products</b><br><br>`;
 
-        parts.forEach(part => {
-            const lines = part.trim().split("\n");
-            const image = lines[0]?.trim();
+        blocks.forEach(block => {
+            const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
 
-            const nameLine = lines.find(l => !l.includes("Price") && l.trim());
-            const priceLine = lines.find(l => l.includes("Price")) || "";
+            const name = lines[0]; // first line = product name
+            const price = lines.find(l => l.includes("Price")) || "";
+            const imageLine = lines.find(l => l.startsWith("Image:"));
+            const image = imageLine ? imageLine.replace("Image:", "").trim() : "";
 
             html += `
               <div style="
@@ -69,8 +69,8 @@ function addChatMessage(message, sender) {
                      "
                      onerror="this.style.display='none'">
                 <div>
-                  <b>${nameLine}</b><br>
-                  <span>${priceLine}</span>
+                  <b>${name}</b><br>
+                  <span>${price}</span>
                 </div>
               </div>
             `;
