@@ -1,4 +1,6 @@
-// Handle sending messages to backend
+// ================================
+// Send message to backend
+// ================================
 async function sendMessage() {
     const inputElement = document.getElementById("userInput");
     const message = inputElement.value.trim();
@@ -10,7 +12,7 @@ async function sendMessage() {
     inputElement.value = "";
 
     try {
-        // ✅ IMPORTANT: Use /api/chat for Vercel
+        // ✅ IMPORTANT: Vercel serverless endpoint
         const response = await fetch("/api/chat", {
             method: "POST",
             headers: {
@@ -20,27 +22,33 @@ async function sendMessage() {
         });
 
         if (!response.ok) {
-            throw new Error("Server error");
+            throw new Error(`Server error: ${response.status}`);
         }
 
         const data = await response.json();
+
+        if (!data || !data.reply) {
+            throw new Error("Invalid response from server");
+        }
 
         // Show bot reply
         addChatMessage(data.reply, "bot");
 
     } catch (error) {
+        console.error("Chat error:", error);
         addChatMessage("❌ Error communicating with the server.", "bot");
-        console.error(error);
     }
 }
 
-// Append message as chat bubble (TEXT + IMAGE SUPPORT)
+// ================================
+// Render chat message (text + image)
+// ================================
 function addChatMessage(message, sender) {
     const chatbox = document.getElementById("chatbox");
     const messageDiv = document.createElement("div");
+
     messageDiv.classList.add("message", sender);
 
-    // If image is included in backend response
     if (typeof message === "string" && message.includes("Image:")) {
         const parts = message.split("Image:");
         const textPart = parts[0].replace(/\n/g, "<br>");
@@ -48,17 +56,24 @@ function addChatMessage(message, sender) {
 
         messageDiv.innerHTML = `
             ${textPart}<br>
-            <img src="${imagePath}" class="product-image" alt="Product Image">
+            <img 
+                src="${imagePath}" 
+                class="product-image" 
+                alt="Product Image"
+                onerror="this.style.display='none'"
+            >
         `;
     } else {
-        messageDiv.innerHTML = message.replace(/\n/g, "<br>");
+        messageDiv.innerHTML = String(message).replace(/\n/g, "<br>");
     }
 
     chatbox.appendChild(messageDiv);
     chatbox.scrollTop = chatbox.scrollHeight;
 }
 
+// ================================
 // Send message on Enter key
+// ================================
 document.getElementById("userInput").addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
         e.preventDefault();
