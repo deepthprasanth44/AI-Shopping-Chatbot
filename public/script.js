@@ -10,13 +10,18 @@ async function sendMessage() {
     inputElement.value = "";
 
     try {
-        const response = await fetch("/chat", {
+        // ✅ IMPORTANT: Use /api/chat for Vercel
+        const response = await fetch("/api/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({ message })
         });
+
+        if (!response.ok) {
+            throw new Error("Server error");
+        }
 
         const data = await response.json();
 
@@ -25,6 +30,7 @@ async function sendMessage() {
 
     } catch (error) {
         addChatMessage("❌ Error communicating with the server.", "bot");
+        console.error(error);
     }
 }
 
@@ -35,14 +41,14 @@ function addChatMessage(message, sender) {
     messageDiv.classList.add("message", sender);
 
     // If image is included in backend response
-    if (message.includes("Image:")) {
+    if (typeof message === "string" && message.includes("Image:")) {
         const parts = message.split("Image:");
         const textPart = parts[0].replace(/\n/g, "<br>");
         const imagePath = parts[1].trim();
 
         messageDiv.innerHTML = `
             ${textPart}<br>
-            <img src="${imagePath}" class="product-image">
+            <img src="${imagePath}" class="product-image" alt="Product Image">
         `;
     } else {
         messageDiv.innerHTML = message.replace(/\n/g, "<br>");
