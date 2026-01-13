@@ -41,15 +41,18 @@ function addChatMessage(message, sender) {
     /* ================= PRODUCT LIST ================= */
     if (typeof message === "string" && message.startsWith("🛍️")) {
 
-        // Split each product block
-        const productBlocks = message.split("\n\n").filter(b => b.includes("Image:"));
+        const productBlocks = message
+            .split("\n\n")
+            .filter(block => block.includes("Price"));
+
         let html = `<b>🛍️ Available Products</b><br><br>`;
 
         productBlocks.forEach(block => {
             const lines = block.split("\n");
             const name = lines[0];
             const price = lines.find(l => l.includes("Price")) || "";
-            const image = block.split("Image:")[1]?.trim();
+            const imageMatch = block.match(/Image:\s*(.*)/);
+            const image = imageMatch ? imageMatch[1].trim() : "";
 
             html += `
               <div style="
@@ -64,7 +67,8 @@ function addChatMessage(message, sender) {
                        height:50px;
                        object-fit:cover;
                        border-radius:6px;
-                     ">
+                     "
+                     onerror="this.style.display='none'">
                 <div>
                   <b>${name}</b><br>
                   <span>${price}</span>
@@ -73,7 +77,7 @@ function addChatMessage(message, sender) {
             `;
         });
 
-        html += `<br>👉 <i>To know more, type the product name</i>`;
+        html += `<br>👉 <i>To know more about a product, type the product name</i>`;
         messageDiv.innerHTML = html;
     }
 
@@ -98,7 +102,8 @@ function addChatMessage(message, sender) {
                    max-width:100%;
                    border-radius:12px;
                    box-shadow:0 4px 12px rgba(0,0,0,0.2);
-                 ">
+                 "
+                 onerror="this.style.display='none'">
             <br><br>
             👉 <b>To order, type: add to cart</b>
           </div>
