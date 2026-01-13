@@ -7,17 +7,13 @@ async function sendMessage() {
 
     if (!message) return;
 
-    // Show user message
     addChatMessage(message, "user");
     inputElement.value = "";
 
     try {
-        // Vercel serverless API
         const response = await fetch("/api/chat", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message })
         });
 
@@ -26,12 +22,6 @@ async function sendMessage() {
         }
 
         const data = await response.json();
-
-        if (!data || !data.reply) {
-            throw new Error("Invalid response from server");
-        }
-
-        // Show bot reply
         addChatMessage(data.reply, "bot");
 
     } catch (error) {
@@ -41,31 +31,82 @@ async function sendMessage() {
 }
 
 // ================================
-// Render chat message (TEXT + IMAGE)
+// Render chat message
 // ================================
 function addChatMessage(message, sender) {
     const chatbox = document.getElementById("chatbox");
     const messageDiv = document.createElement("div");
-
     messageDiv.classList.add("message", sender);
 
-    // Handle messages that contain ONE image
-    if (typeof message === "string" && message.includes("Image:")) {
-        const parts = message.split("Image:");
-        const textPart = parts[0].trim().replace(/\n/g, "<br>");
-        const imagePath = parts[1].trim();
+    /* ================= PRODUCT LIST ================= */
+    if (typeof message === "string" && message.startsWith("🛍️")) {
+
+        // Split each product block
+        const productBlocks = message.split("\n\n").filter(b => b.includes("Image:"));
+        let html = `<b>🛍️ Available Products</b><br><br>`;
+
+        productBlocks.forEach(block => {
+            const lines = block.split("\n");
+            const name = lines[0];
+            const price = lines.find(l => l.includes("Price")) || "";
+            const image = block.split("Image:")[1]?.trim();
+
+            html += `
+              <div style="
+                display:flex;
+                align-items:center;
+                gap:12px;
+                margin-bottom:12px;
+              ">
+                <img src="${image}"
+                     style="
+                       width:50px;
+                       height:50px;
+                       object-fit:cover;
+                       border-radius:6px;
+                     ">
+                <div>
+                  <b>${name}</b><br>
+                  <span>${price}</span>
+                </div>
+              </div>
+            `;
+        });
+
+        html += `<br>👉 <i>To know more, type the product name</i>`;
+        messageDiv.innerHTML = html;
+    }
+
+    /* ================= PRODUCT DETAILS ================= */
+    else if (
+        typeof message === "string" &&
+        message.includes("🆔") &&
+        message.includes("Image:")
+    ) {
+        const imagePath = message.match(/Image:\s*(.*)/)?.[1];
+        const text = message
+            .replace(/Image:.*/, "")
+            .replace(/\n/g, "<br>");
 
         messageDiv.innerHTML = `
-            <div class="text-part">${textPart}</div>
-            <img 
-                src="${imagePath}" 
-                class="product-image"
-                alt="Product Image"
-                onerror="this.style.display='none'"
-            >
+          <div>
+            ${text}
+            <br><br>
+            <img src="${imagePath}"
+                 style="
+                   width:260px;
+                   max-width:100%;
+                   border-radius:12px;
+                   box-shadow:0 4px 12px rgba(0,0,0,0.2);
+                 ">
+            <br><br>
+            👉 <b>To order, type: add to cart</b>
+          </div>
         `;
-    } else {
-        // Normal text message
+    }
+
+    /* ================= NORMAL MESSAGE ================= */
+    else {
         messageDiv.innerHTML = String(message).replace(/\n/g, "<br>");
     }
 
