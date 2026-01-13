@@ -41,18 +41,17 @@ function addChatMessage(message, sender) {
     /* ================= PRODUCT LIST ================= */
     if (typeof message === "string" && message.startsWith("🛍️")) {
 
-        const productBlocks = message
-            .split("\n\n")
-            .filter(block => block.includes("Price"));
+        // Split safely using Image:
+        const parts = message.split("Image:").slice(1);
 
         let html = `<b>🛍️ Available Products</b><br><br>`;
 
-        productBlocks.forEach(block => {
-            const lines = block.split("\n");
-            const name = lines[0];
-            const price = lines.find(l => l.includes("Price")) || "";
-            const imageMatch = block.match(/Image:\s*(.*)/);
-            const image = imageMatch ? imageMatch[1].trim() : "";
+        parts.forEach(part => {
+            const lines = part.trim().split("\n");
+            const image = lines[0]?.trim();
+
+            const nameLine = lines.find(l => !l.includes("Price") && l.trim());
+            const priceLine = lines.find(l => l.includes("Price")) || "";
 
             html += `
               <div style="
@@ -63,15 +62,15 @@ function addChatMessage(message, sender) {
               ">
                 <img src="${image}"
                      style="
-                       width:50px;
-                       height:50px;
+                       width:45px;
+                       height:45px;
                        object-fit:cover;
                        border-radius:6px;
                      "
                      onerror="this.style.display='none'">
                 <div>
-                  <b>${name}</b><br>
-                  <span>${price}</span>
+                  <b>${nameLine}</b><br>
+                  <span>${priceLine}</span>
                 </div>
               </div>
             `;
@@ -120,7 +119,7 @@ function addChatMessage(message, sender) {
 }
 
 // ================================
-// Send message on Enter key
+// Send on Enter key
 // ================================
 document.getElementById("userInput").addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
