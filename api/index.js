@@ -2,136 +2,207 @@ import fetch from "node-fetch";
 import fs from "fs";
 import path from "path";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-const productsPath = path.join(process.cwd(), "public", "products.json");
-const products = JSON.parse(fs.readFileSync(productsPath, "utf-8"));
-
+/**
+ * Simple in-memory cart (per deployment)
+ * For demo / academic projects – OK
+ */
 let cart = [];
-let waitingForProductToAdd = false;
-
-async function askGemini(text) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text }] }]
-      })
-    }
-  );
-
-  const data = await response.json();
-  return (
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "Sorry, I couldn't understand that."
-  );
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ reply: "Method not allowed" });
   }
 
-  const message = req.body.message?.toLowerCase().trim();
-  if (!message) {
-    return res.json({ reply: "Please type something." });
-  }
+  try {
+    const { message } = req.body;
 
-  if (["hi", "hello", "hey"].includes(message)) {
-    return res.json({
-      reply:
-        "Hello 👋 You can type 'show products', product name, 'add to cart', or 'checkout'."
-    });
-  }
-
-  const budgetMatch = message.match(/(under|below)\s*₹?\s*(\d+)/);
-  if (budgetMatch) {
-    const budget = parseInt(budgetMatch[2]);
-    const filtered = products.filter(p => p.price <= budget);
-    return res.json({
-      reply:
-        filtered.length === 0
-          ? `No products under ₹${budget}.`
-          : filtered.map(p => p.name).join(", ")
-    });
-  }
-
-  if (message.includes("show")) {
-    return res.json({
-      reply: products.map(p => p.name).join(", ")
-    });
-  }
-
-  if (message.includes("add to cart")) {
-    waitingForProductToAdd = true;
-    return res.json({
-      reply: "Which product do you want to add?"
-    });
-  }
-
-  if (waitingForProductToAdd) {
-    const product = products.find(p =>
-      p.name.toLowerCase().includes(message)
-    );
-
-    if (!product) {
-      return res.json({ reply: "Product not found." });
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ reply: "Message missing" });
     }
 
-    const existing = cart.find(i => i.id === product.id);
-    if (existing) existing.quantity += 1;
-    else cart.push({ ...product, quantity: 1 });
+    const userMessage = message.toLowerCase().trim();
 
-    waitingForProductToAdd = false;
-    return res.json({ reply: `${product.name} added to cart.` });
-  }
+    // Load products.json (Vercel safe)
+    const productsPath = path.join(process.cwd(), "public", "products.json");
+    const products = JSON.parse(fs.readFileSync(productsPath, "utf-8"));
 
-  if (message.includes("price")) {
-    const product = products.find(p =>
-      message.includes(p.name.toLowerCase())
-    );
-    if (product) {
+    /* ================= GREETING ================= */
+    if (["hi", "hello", "hey"].includes(userMessage)) {
       return res.json({
-        reply: `The price of ${product.name} is ₹${product.price}.`
+        reply:
+`Hello 👋  
+You can try:  
+• products  
+• prices  
+• products under 3000  
+• add to cart <product name>  
+• cart  
+• checkout`
       });
     }
-  }
 
-  const product = products.find(p =>
-    message.includes(p.name.toLowerCase())
-  );
+    /* ================= SHOW ALL PRODUCTS ================= */
+    if (
+      userMessage === "products" ||
+      userMessage === "show products" ||
+      userMessage.includes("list products")
+    ) {
+      let reply = "🛍️ Available Products:\n\n";
 
-  if (product) {
-    const imageName = product.name.toLowerCase().replace(/\s+/g, "-");
-    return res.json({
-      reply: `ID: ${product.id}
-Name: ${product.name}
-Price: ₹${product.price}
-Description: ${product.description}
-Stock: ${product.stock}
-Image: images/${imageName}.jpg`
-    });
-  }
+      products.forEach(p => {
+        const imageName = p.name.toLowerCase().replace(/\s+/g, "-");
 
-  if (message.includes("checkout")) {
-    if (cart.length === 0) {
-      return res.json({ reply: "Your cart is empty." });
+        reply += `
+${p.name}
+Price: ₹${p.price}
+Description: ${p.description}
+Image: images/${imageName}.jpg
+
+`;
+      });
+
+      reply += "👉 To add an item: add to cart <product name>";
+
+      return res.json({ reply: reply.trim() });
     }
 
-    let total = 0;
-    let summary = "Order Summary:\n";
-    cart.forEach(i => {
-      summary += `${i.name} x${i.quantity} - ₹${i.price * i.quantity}\n`;
-      total += i.price * i.quantity;
+    /* ================= PRICE LIST ================= */
+    if (userMessage === "prices" || userMessage === "price list") {
+      let reply = "💰 Product Prices:\n\n";
+
+      products.forEach(p => {
+        reply += `${p.name} – ₹${p.price}\n`;
+      });
+
+      return res.json({ reply: reply.trim() });
+    }
+
+    /* ================= BUDGET QUERY ================= */
+    const budgetMatch = userMessage.match(/(under|below)\s*₹?\s*(\d+)/);
+    if (budgetMatch) {
+      const budget = parseInt(budgetMatch[2], 10);
+      const filtered = products.filter(p => p.price <= budget);
+
+      if (!filtered.length) {
+        return res.json({ reply: `No products under ₹${budget}.` });
+      }
+
+      let reply = `Products under ₹${budget}:\n\n`;
+
+      filtered.forEach(p => {
+        const imageName = p.name.toLowerCase().replace(/\s+/g, "-");
+        reply += `
+${p.name}
+Price: ₹${p.price}
+Image: images/${imageName}.jpg
+
+`;
+      });
+
+      return res.json({ reply: reply.trim() });
+    }
+
+    /* ================= ADD TO CART ================= */
+    if (userMessage.startsWith("add to cart")) {
+      const productName = userMessage.replace("add to cart", "").trim();
+
+      const product = products.find(p =>
+        productName.includes(p.name.toLowerCase())
+      );
+
+      if (!product) {
+        return res.json({ reply: "❌ Product not found." });
+      }
+
+      cart.push(product);
+
+      return res.json({
+        reply: `✅ ${product.name} added to cart.`
+      });
+    }
+
+    /* ================= VIEW CART ================= */
+    if (userMessage === "cart" || userMessage === "view cart") {
+      if (!cart.length) {
+        return res.json({ reply: "🛒 Your cart is empty." });
+      }
+
+      let total = 0;
+      let reply = "🛒 Your Cart:\n\n";
+
+      cart.forEach(p => {
+        reply += `${p.name} – ₹${p.price}\n`;
+        total += p.price;
+      });
+
+      reply += `\nTotal: ₹${total}\n\nType 'checkout' to place order`;
+
+      return res.json({ reply });
+    }
+
+    /* ================= CHECKOUT ================= */
+    if (userMessage === "checkout") {
+      if (!cart.length) {
+        return res.json({ reply: "🛒 Your cart is empty." });
+      }
+
+      let total = 0;
+      let reply = "✅ Order Confirmed!\n\nItems:\n";
+
+      cart.forEach(p => {
+        reply += `• ${p.name} – ₹${p.price}\n`;
+        total += p.price;
+      });
+
+      reply += `\nTotal Paid: ₹${total}\n\n🎉 Thank you for shopping!`;
+
+      cart = []; // clear cart
+
+      return res.json({ reply });
+    }
+
+    /* ================= PRODUCT NAME DIRECT ================= */
+    const product = products.find(p =>
+      userMessage.includes(p.name.toLowerCase())
+    );
+
+    if (product) {
+      const imageName = product.name.toLowerCase().replace(/\s+/g, "-");
+
+      return res.json({
+        reply: `
+${product.name}
+Price: ₹${product.price}
+Description: ${product.description}
+Image: images/${imageName}.jpg
+        `.trim()
+      });
+    }
+
+    /* ================= GEMINI FALLBACK ================= */
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: message }] }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    const aiReply =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Sorry, I couldn't understand that.";
+
+    return res.json({ reply: aiReply });
+
+  } catch (error) {
+    console.error("API ERROR:", error);
+    return res.status(500).json({
+      reply: "Internal server error. Please try again."
     });
-
-    cart = [];
-    summary += `\nTotal: ₹${total}\nOrder confirmed ✅`;
-    return res.json({ reply: summary });
   }
-
-  const aiReply = await askGemini(message);
-  return res.json({ reply: aiReply });
 }
